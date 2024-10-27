@@ -34,4 +34,5 @@ interface IReservesSetupHelper {
     ) external;
 
     function transferOwnership(address _newOwner) external;
+    function owner() external returns (address);
 }

@@ -10,67 +10,110 @@ import { IPoolAddressesProvider } from './dependencies/interfaces/IPoolAddresses
 import { IPoolConfigurator } from './dependencies/interfaces/IPoolConfigurator.sol';
 import { IERC20Detailed } from './dependencies/interfaces/IERC20Detailed.sol';
 import { IReservesSetupHelper } from './dependencies/interfaces/IReservesSetupHelper.sol';
+import { IACLManager } from './dependencies/interfaces/IACLManager.sol';
 
-// ConfigEngine must be riskAdmin and assetListingAdmin
-contract ConfigEngine is Ownable {
+
+/// @title ListingsConfigEngine
+/// @author HyperLend
+/// @notice Config engine used to list new tokens
+/// @dev New contract has to be deployed per proposal
+contract ListingsConfigEngine is Ownable {
+    /// @notice signals if the proposal was already executed
+    bool public isExecuted;
+
+    /// @notice struct holding all information about the proposal
     struct Proposal {
-        uint256 proposalId;
-        string name;
-        string description;
-
-        MarketConfig marketConfig;
-        AssetConfig assetConfig;
+        uint256 proposalId;         // proposal ID
+        string description;         // description of the proposal
+        
+        MarketConfig marketConfig;  // info about the market we want to add the asset to
+        AssetConfig assetConfig;    // info about the asset we want to add
     }
 
+    /// @notice info about the market we want to add the asset to
     struct MarketConfig {
-        IPriceSource priceSource;
-        IPoolAddressesProvider poolAddressesProvider;
-        IReservesSetupHelper reservesSetupHelper;
+        IPriceSource priceSource;                      // external chainlink-compatible price source contract
+        IPoolAddressesProvider poolAddressesProvider;  // poolAddressesProvider of the market
+        IReservesSetupHelper reservesSetupHelper;      // reservesSetupHelper helper contract
     }
 
+    /// @notice info about the asset we want to add
     struct AssetConfig {
-        address underlyingAsset;
-        address aTokenImpl;
-        address stableDebtTokenImpl;
-        address variableDebtTokenImpl;
-        address interestRateStrategyAddress;
-        address treasury;
-        address incentivesController;
-        string ATokenNamePrefix;
-        string SymbolPrefix;
-        string VariableDebtTokenNamePrefix;
-        string StableDebtTokenNamePrefix;
-        ReserveConfig reserveConfig;
+        address underlyingAsset;              // address of the underlying asset
+        address aTokenImpl;                   // address of the hToken implementation contract
+        address stableDebtTokenImpl;          // address of the stable debt implementation contract
+        address variableDebtTokenImpl;        // address of the variable debt implementation contract
+        address interestRateStrategyAddress;  // address of the interest rate strategy contract
+        address treasury;                     // address of the treasury
+        address incentivesController;         // address of the incentives controler contract, can be address(0)
+        string ATokenNamePrefix;              // prefix used in the hToken name
+        string SymbolPrefix;                  // prefix used in the hToken symbol
+        string VariableDebtTokenNamePrefix;   // prefix used for variable debt token name
+        string StableDebtTokenNamePrefix;     // prefix used for stable debt token name
+        ReserveConfig reserveConfig;          // info about the asset reserve configuration
     }
 
+    /// @notice info about the asset reserve configuration
     struct ReserveConfig {
-        uint256 baseLTV;
-        uint256 liquidationThreshold;
-        uint256 liquidationBonus;
-        uint256 reserveFactor;
-        uint256 borrowCap;
-        uint256 supplyCap;
-        bool stableBorrowingEnabled;
-        bool borrowingEnabled;
-        bool flashLoanEnabled;
-        uint256[] seedAmounts;
-        address seedAmounsHolder;
+        uint256 baseLTV;               // loan-to-value ratio in bsp (8000 = 80%)
+        uint256 liquidationThreshold;  // liquidation threshold in bps
+        uint256 liquidationBonus;      // bonus paid to the liquidators, in bps, must be >100%, otherwise liquidator would receive less (11000 = 10%)
+        uint256 reserveFactor;         // reserve factor of the interest paid to the treasury, in bps
+        uint256 borrowCap;             // borrow cap, in full tokens (100 BTC = 100, not 100**decimals)
+        uint256 supplyCap;             // supply cap, in full tokens
+        bool stableBorrowingEnabled;   // is stable borrowing enabled
+        bool borrowingEnabled;         // is borrowing enabled
+        bool flashLoanEnabled;         // are flashloans enabled for this asset
+        uint256 seedAmount;            // amount of the token, used to seed the pool, must be > 10000
+        address seedAmounsHolder;      // contract used to hold seed amounts, can be address(0)
     }
 
+    /// @notice info about the proposal
     Proposal public proposal;
 
+    /// @notice event emitting the price source data, used during simulations
     event PriceSourceData(uint256 _price);
 
     constructor(bytes memory _encodedProposal){
         proposal = abi.decode(_encodedProposal, (Proposal));
     }
 
+    /// @notice function used to execute the proposal
     function executeProposal() external onlyOwner() {
+        _beforeProposal();
+
         _configureOracle();
-        _initReserves();
-        _configureReserves();
+        _initReserve();
+        _configureReserve();
+
+        _afterProposal();
     }
 
+    /// @notice function used to cancel the proposal
+    function cancelProposal() external onlyOwner() {
+        _afterProposal();
+    }
+
+    /// @notice checks if the proposal was not yet executed and the contract has all required privilegies
+    function _beforeProposal() internal {
+        require(!isExecuted, "alreadyExecuted");
+
+        //verify we have all correct privilegies on ACLManager
+        IACLManager aclManager = IACLManager(proposal.marketConfig.poolAddressesProvider.getACLManager());
+        require(aclManager.isAssetListingAdmin(address(this)), "missing assetListingAdmin privilegies");
+        require(aclManager.isRiskAdmin(address(this)), "missing assetListingAdmin privilegies");
+
+        //verify we are owner of ReservesSetupHelper
+        require(IReservesSetupHelper(proposal.marketConfig.reservesSetupHelper).owner() == address(this), "missing ownership of reservesSetupHelper");
+    }
+
+    /// @notice marks proposal as executed and transfers ownership of reservesSetupHelper back to owner
+    function _afterProposal() internal {
+        isExecuted = true;
+        proposal.marketConfig.reservesSetupHelper.transferOwnership(owner());
+    }
+
+    /// @notice adds the new price source to the market oracle
     function _configureOracle() internal {
         MarketConfig memory marketConfig = proposal.marketConfig;
         AssetConfig memory assetConfig = proposal.assetConfig;
@@ -95,7 +138,8 @@ contract ConfigEngine is Ownable {
         require(oraclePrice == sourcePrice, "oraclePrice != sourcePrice");
     }
 
-    function _initReserves() internal {
+    /// @notice initializes the reserve for the asset using PoolConfigurator
+    function _initReserve() internal {
         MarketConfig memory marketConfig = proposal.marketConfig;
         AssetConfig memory assetConfig = proposal.assetConfig;
 
@@ -123,7 +167,8 @@ contract ConfigEngine is Ownable {
         poolConfigurator.initReserves(initInputConfig);
     }
 
-    function _configureReserves() internal {
+    /// @notice configures the reserve for the asset using ReservesSetupHelper
+    function _configureReserve() internal {
         MarketConfig memory marketConfig = proposal.marketConfig;
         AssetConfig memory assetConfig = proposal.assetConfig;
         ReserveConfig memory reserveConfig = proposal.assetConfig.reserveConfig;
@@ -144,14 +189,15 @@ contract ConfigEngine is Ownable {
             flashLoanEnabled: reserveConfig.flashLoanEnabled
         });
 
+        uint256[] memory seedAmounts;
+        seedAmounts[0] = reserveConfig.seedAmount;
+
         marketConfig.reservesSetupHelper.configureReserves(
             poolConfigurator,
             configureInputConfig,
-            reserveConfig.seedAmounts,
+            seedAmounts,
             address(marketConfig.poolAddressesProvider.getPool()),
             reserveConfig.seedAmounsHolder
-        );
-        
-        marketConfig.reservesSetupHelper.transferOwnership(owner()); //transfer ownership back to the pool admin
+        );        
     }
 }
