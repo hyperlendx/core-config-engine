@@ -240,6 +240,11 @@ contract ListingConfigEngine is Ownable {
     /*                      View functions                      */
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
+    /// @notice returns the proposal struct
+    function getProposal() external view returns (Proposal memory _proposal){
+        return proposal;
+    }
+
     /// @notice returns the market config struct
     function getMarketConfig() external view returns (MarketConfig memory _marketConfig){
         return proposal.marketConfig;
