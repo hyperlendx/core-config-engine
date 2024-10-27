@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.18;
 
 import { Ownable } from './dependencies/Ownable.sol';
 import { ConfiguratorInputTypes } from './dependencies/types/ConfiguratorInputTypes.sol';
@@ -9,32 +9,29 @@ import { IPriceSource } from './dependencies/interfaces/IPriceSource.sol';
 import { IPoolAddressesProvider } from './dependencies/interfaces/IPoolAddressesProvider.sol';
 import { IPoolConfigurator } from './dependencies/interfaces/IPoolConfigurator.sol';
 import { IERC20Detailed } from './dependencies/interfaces/IERC20Detailed.sol';
-import { IReservesSetupHelper } from './dependencies/interfaces/IReservesSetupHelper.sol';
 import { IACLManager } from './dependencies/interfaces/IACLManager.sol';
-
+import { IPool } from './dependencies/interfaces/IPool.sol';
 
 /// @title ListingsConfigEngine
 /// @author HyperLend
 /// @notice Config engine used to list new tokens
 /// @dev New contract has to be deployed per proposal
 contract ListingsConfigEngine is Ownable {
-    /// @notice signals if the proposal was already executed
-    bool public isExecuted;
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    /*                         Structs                          */
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /// @notice struct holding all information about the proposal
     struct Proposal {
-        uint256 proposalId;         // proposal ID
-        string description;         // description of the proposal
-        
-        MarketConfig marketConfig;  // info about the market we want to add the asset to
-        AssetConfig assetConfig;    // info about the asset we want to add
+        uint256 proposalId;             // proposal ID
+        MarketConfig marketConfig;      // info about the market we want to add the asset to
+        AssetConfig assetConfig;        // info about the asset we want to add
     }
 
     /// @notice info about the market we want to add the asset to
     struct MarketConfig {
-        IPriceSource priceSource;                      // external chainlink-compatible price source contract
-        IPoolAddressesProvider poolAddressesProvider;  // poolAddressesProvider of the market
-        IReservesSetupHelper reservesSetupHelper;      // reservesSetupHelper helper contract
+        address priceSource;            // external chainlink-compatible price source contract
+        address poolAddressesProvider;  // poolAddressesProvider of the market
     }
 
     /// @notice info about the asset we want to add
@@ -46,10 +43,6 @@ contract ListingsConfigEngine is Ownable {
         address interestRateStrategyAddress;  // address of the interest rate strategy contract
         address treasury;                     // address of the treasury
         address incentivesController;         // address of the incentives controler contract, can be address(0)
-        string ATokenNamePrefix;              // prefix used in the hToken name
-        string SymbolPrefix;                  // prefix used in the hToken symbol
-        string VariableDebtTokenNamePrefix;   // prefix used for variable debt token name
-        string StableDebtTokenNamePrefix;     // prefix used for stable debt token name
         ReserveConfig reserveConfig;          // info about the asset reserve configuration
     }
 
@@ -65,17 +58,47 @@ contract ListingsConfigEngine is Ownable {
         bool borrowingEnabled;         // is borrowing enabled
         bool flashLoanEnabled;         // are flashloans enabled for this asset
         uint256 seedAmount;            // amount of the token, used to seed the pool, must be > 10000
-        address seedAmounsHolder;      // contract used to hold seed amounts, can be address(0)
+        address seedAmountsHolder;     // contract used to hold seed amounts, can be address(0)
     }
+
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    /*                        Variables                         */
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /// @notice info about the proposal
     Proposal public proposal;
+    /// @notice signals if the proposal was already executed
+    bool public isExecuted;
+    
+    /// @notice pool address provider of the market
+    IPoolAddressesProvider public poolAddressesProvider;
+    /// @notice pool configurator of the market
+    IPoolConfigurator public poolConfigurator;
+
+    /// @notice strings are stored separately, since they are causing problems if they are encoded in the struct
+    string public description;         // description of the proposal
+    string public hTokenNamePrefix;    // prefix used in the hToken name
+    string public symbolPrefix;        // prefix used in the hToken symbol
+    string public debtTokenPrefix;     // prefix used for debt tokens name
 
     /// @notice event emitting the price source data, used during simulations
     event PriceSourceData(uint256 _price);
 
-    constructor(bytes memory _encodedProposal){
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    /*                     Admin functions                      */
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+    /// @notice constructor that receives abi encoded proposal and string prefixes
+    constructor(bytes memory _encodedProposal, string memory _desc, string memory _hTokenNamePrefix, string memory _symbolPrefix, string memory _debtTokenPrefix) {
         proposal = abi.decode(_encodedProposal, (Proposal));
+
+        description = _desc;
+        hTokenNamePrefix = _hTokenNamePrefix;
+        symbolPrefix = _symbolPrefix;
+        debtTokenPrefix = _debtTokenPrefix;
+
+        poolAddressesProvider = IPoolAddressesProvider(proposal.marketConfig.poolAddressesProvider);
+        poolConfigurator = IPoolConfigurator(poolAddressesProvider.getPoolConfigurator());
     }
 
     /// @notice function used to execute the proposal
@@ -94,23 +117,25 @@ contract ListingsConfigEngine is Ownable {
         _afterProposal();
     }
 
+
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    /*                    Internal functions                    */
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+
     /// @notice checks if the proposal was not yet executed and the contract has all required privilegies
-    function _beforeProposal() internal {
+    function _beforeProposal() internal view {
         require(!isExecuted, "alreadyExecuted");
 
         //verify we have all correct privilegies on ACLManager
-        IACLManager aclManager = IACLManager(proposal.marketConfig.poolAddressesProvider.getACLManager());
+        IACLManager aclManager = IACLManager(poolAddressesProvider.getACLManager());
         require(aclManager.isAssetListingAdmin(address(this)), "missing assetListingAdmin privilegies");
         require(aclManager.isRiskAdmin(address(this)), "missing assetListingAdmin privilegies");
-
-        //verify we are owner of ReservesSetupHelper
-        require(IReservesSetupHelper(proposal.marketConfig.reservesSetupHelper).owner() == address(this), "missing ownership of reservesSetupHelper");
     }
 
-    /// @notice marks proposal as executed and transfers ownership of reservesSetupHelper back to owner
+    /// @notice marks proposal as executed
     function _afterProposal() internal {
         isExecuted = true;
-        proposal.marketConfig.reservesSetupHelper.transferOwnership(owner());
     }
 
     /// @notice adds the new price source to the market oracle
@@ -119,17 +144,17 @@ contract ListingsConfigEngine is Ownable {
         AssetConfig memory assetConfig = proposal.assetConfig;
 
         //get addresses from the addressesProvider
-        IOracle oracle = IOracle(marketConfig.poolAddressesProvider.getPriceOracle());
+        IOracle oracle = IOracle(poolAddressesProvider.getPriceOracle());
 
         //verify the price source exists on the external aggregator
-        uint256 sourcePrice = uint256(marketConfig.priceSource.latestAnswer());
+        uint256 sourcePrice = uint256(IPriceSource(marketConfig.priceSource).latestAnswer());
         require(sourcePrice != 0, "price == 0");
         emit PriceSourceData(sourcePrice); 
 
         //add asset to oracle
-        address[] memory assets;
+        address[] memory assets = new address[](1);
         assets[0] = assetConfig.underlyingAsset;
-        address[] memory sources;
+        address[] memory sources = new address[](1);
         sources[0] = address(marketConfig.priceSource);
         oracle.setAssetSources(assets, sources);
 
@@ -140,13 +165,11 @@ contract ListingsConfigEngine is Ownable {
 
     /// @notice initializes the reserve for the asset using PoolConfigurator
     function _initReserve() internal {
-        MarketConfig memory marketConfig = proposal.marketConfig;
         AssetConfig memory assetConfig = proposal.assetConfig;
 
-        IPoolConfigurator poolConfigurator = IPoolConfigurator(marketConfig.poolAddressesProvider.getPoolConfigurator());
         string memory symbol = IERC20Detailed(assetConfig.underlyingAsset).symbol();
 
-        ConfiguratorInputTypes.InitReserveInput[] memory initInputConfig;
+        ConfiguratorInputTypes.InitReserveInput[] memory initInputConfig = new ConfiguratorInputTypes.InitReserveInput[](1);
         initInputConfig[0] = ConfiguratorInputTypes.InitReserveInput({
             aTokenImpl: assetConfig.aTokenImpl,
             stableDebtTokenImpl: assetConfig.stableDebtTokenImpl,
@@ -156,12 +179,12 @@ contract ListingsConfigEngine is Ownable {
             underlyingAsset: assetConfig.underlyingAsset,
             treasury: assetConfig.treasury,
             incentivesController: assetConfig.incentivesController,
-            aTokenName: string(abi.encodePacked("HyperLend ", assetConfig.ATokenNamePrefix, " ", symbol)),
-            aTokenSymbol: string(abi.encodePacked("h", assetConfig.SymbolPrefix, symbol)),
-            variableDebtTokenName: string(abi.encodePacked("HyperLend ", assetConfig.VariableDebtTokenNamePrefix, " Variable Debt ", symbol)),
-            variableDebtTokenSymbol: string(abi.encodePacked("hVariableDebt", assetConfig.SymbolPrefix, symbol)),
-            stableDebtTokenName: string(abi.encodePacked("HyperLend ", assetConfig.StableDebtTokenNamePrefix, " Stable Debt ", symbol)),
-            stableDebtTokenSymbol: string(abi.encodePacked("hStableDebt", assetConfig.SymbolPrefix, symbol)),
+            aTokenName: string(abi.encodePacked("HyperLend ", hTokenNamePrefix, " ", symbol)),
+            aTokenSymbol: string(abi.encodePacked("h", symbolPrefix, symbol)),
+            variableDebtTokenName: string(abi.encodePacked("HyperLend ", debtTokenPrefix, " Variable Debt ", symbol)),
+            variableDebtTokenSymbol: string(abi.encodePacked("hVariableDebt", debtTokenPrefix, symbol)),
+            stableDebtTokenName: string(abi.encodePacked("HyperLend ", debtTokenPrefix, " Stable Debt ", symbol)),
+            stableDebtTokenSymbol: string(abi.encodePacked("hStableDebt", symbolPrefix, symbol)),
             params: "0x10"
         });
         poolConfigurator.initReserves(initInputConfig);
@@ -169,35 +192,41 @@ contract ListingsConfigEngine is Ownable {
 
     /// @notice configures the reserve for the asset using ReservesSetupHelper
     function _configureReserve() internal {
-        MarketConfig memory marketConfig = proposal.marketConfig;
         AssetConfig memory assetConfig = proposal.assetConfig;
         ReserveConfig memory reserveConfig = proposal.assetConfig.reserveConfig;
+  
+        poolConfigurator.configureReserveAsCollateral(
+            assetConfig.underlyingAsset,
+            reserveConfig.baseLTV,
+            reserveConfig.liquidationThreshold,
+            reserveConfig.liquidationBonus
+        );
 
-        IPoolConfigurator poolConfigurator = IPoolConfigurator(marketConfig.poolAddressesProvider.getPoolConfigurator());
+        if (reserveConfig.borrowingEnabled) {
+            poolConfigurator.setReserveBorrowing(assetConfig.underlyingAsset, true);
 
-        IReservesSetupHelper.ConfigureReserveInput[] memory configureInputConfig;
-        configureInputConfig[0] = IReservesSetupHelper.ConfigureReserveInput({
-            asset: assetConfig.underlyingAsset,
-            baseLTV: reserveConfig.baseLTV,
-            liquidationThreshold: reserveConfig.liquidationThreshold,
-            liquidationBonus: reserveConfig.liquidationBonus,
-            reserveFactor: reserveConfig.reserveFactor,
-            borrowCap: reserveConfig.borrowCap,
-            supplyCap: reserveConfig.supplyCap,
-            stableBorrowingEnabled: reserveConfig.stableBorrowingEnabled,
-            borrowingEnabled: reserveConfig.borrowingEnabled,
-            flashLoanEnabled: reserveConfig.flashLoanEnabled
-        });
+            poolConfigurator.setBorrowCap(assetConfig.underlyingAsset, reserveConfig.borrowCap);
+            poolConfigurator.setReserveStableRateBorrowing(
+                assetConfig.underlyingAsset,
+                reserveConfig.stableBorrowingEnabled
+            );
+        }
 
-        uint256[] memory seedAmounts;
-        seedAmounts[0] = reserveConfig.seedAmount;
+        poolConfigurator.setReserveFlashLoaning(
+            assetConfig.underlyingAsset,
+            reserveConfig.flashLoanEnabled
+        );
+        poolConfigurator.setSupplyCap(assetConfig.underlyingAsset, reserveConfig.supplyCap);
+        poolConfigurator.setReserveFactor(assetConfig.underlyingAsset, reserveConfig.reserveFactor);   
 
-        marketConfig.reservesSetupHelper.configureReserves(
-            poolConfigurator,
-            configureInputConfig,
-            seedAmounts,
-            address(marketConfig.poolAddressesProvider.getPool()),
-            reserveConfig.seedAmounsHolder
-        );        
+        _seedPool(assetConfig.underlyingAsset, poolAddressesProvider.getPool(), reserveConfig.seedAmount, reserveConfig.seedAmountsHolder);  
+    }
+
+    function _seedPool(address token, address pool, uint256 amount, address seedAmountsHolder) internal {
+        require(amount >= 10000, 'seed amount too low');
+
+        IERC20Detailed(token).transferFrom(owner(), address(this), amount);
+        IERC20Detailed(token).approve(pool, amount);
+        IPool(pool).supply(token, amount, seedAmountsHolder, 0);
     }
 }

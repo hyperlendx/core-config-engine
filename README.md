@@ -1,22 +1,24 @@
 # HyperLend Config Engine
 
-The contract is used to deploy add new tokens to the HyperLend markets
+The contract is used to add new assets to the HyperLend markets
 
 ---
 
-- deploy ConfigEngine instance
-- setup proposal
+```
+- Create proposal
+- Deploy ConfigEngine instance
 
-- make ConfigEngine riskAdmin
-- make ConfigEngine listingsAdmin
-
-- make ReservesSetupHelper riskAdmin
-- transfer ownership of ReservesSetupHelper to ConfigEngine
+- Make ConfigEngine riskAdmin
+- Make ConfigEngine listingsAdmin
 
 - do simulations...
 
 - call executeProposal()
 
-- remove ConfigEngine from riskAdmin
-- remove ConfigEngine from listingsAdmin
-- remove ReservesSetupHelper from riskAdmin
+- Remove ConfigEngine from riskAdmin
+- Remove ConfigEngine from listingsAdmin
+```
+
+---
+
+Run simulations: `npx hardhat run scripts/simulation.js --network hardhat`
