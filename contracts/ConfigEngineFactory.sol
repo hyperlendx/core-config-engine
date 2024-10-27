@@ -70,4 +70,9 @@ contract ConfigEngineFactory is Ownable {
     function getProposal(uint256 _id) external view returns (ListingConfigEngine.Proposal memory _proposal) {
         return ListingConfigEngine(proposalConfigEngines[_id]).getProposal();
     }
+
+    /// @notice returns the proposal description
+    function getDescription(uint256 _id) external view returns (string memory _desc) {
+        return ListingConfigEngine(proposalConfigEngines[_id]).description();
+    }
 }
