@@ -12,11 +12,11 @@ import { IERC20Detailed } from './dependencies/interfaces/IERC20Detailed.sol';
 import { IACLManager } from './dependencies/interfaces/IACLManager.sol';
 import { IPool } from './dependencies/interfaces/IPool.sol';
 
-/// @title ListingsConfigEngine
+/// @title ListingConfigEngine
 /// @author HyperLend
 /// @notice Config engine used to list new tokens
 /// @dev New contract has to be deployed per proposal
-contract ListingsConfigEngine is Ownable {
+contract ListingConfigEngine is Ownable {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     /*                         Structs                          */
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -89,6 +89,11 @@ contract ListingsConfigEngine is Ownable {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
 
     /// @notice constructor that receives abi encoded proposal and string prefixes
+    /// @param _encodedProposal abi encoded proposal
+    /// @param _desc description of the proposal
+    /// @param _hTokenNamePrefix prefix used in the hToken name
+    /// @param _symbolPrefix prefix used in the hToken symbol
+    /// @param _debtTokenPrefix prefix used for debt tokens name
     constructor(bytes memory _encodedProposal, string memory _desc, string memory _hTokenNamePrefix, string memory _symbolPrefix, string memory _debtTokenPrefix) {
         proposal = abi.decode(_encodedProposal, (Proposal));
 
@@ -222,11 +227,31 @@ contract ListingsConfigEngine is Ownable {
         _seedPool(assetConfig.underlyingAsset, poolAddressesProvider.getPool(), reserveConfig.seedAmount, reserveConfig.seedAmountsHolder);  
     }
 
+    /// @notice function used to seed the new pool, so it's never empty
     function _seedPool(address token, address pool, uint256 amount, address seedAmountsHolder) internal {
         require(amount >= 10000, 'seed amount too low');
 
-        IERC20Detailed(token).transferFrom(owner(), address(this), amount);
+        IERC20Detailed(token).transferFrom(msg.sender, address(this), amount);
         IERC20Detailed(token).approve(pool, amount);
         IPool(pool).supply(token, amount, seedAmountsHolder, 0);
+    }
+
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+    /*                      View functions                      */
+    /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+
+    /// @notice returns the market config struct
+    function getMarketConfig() external view returns (MarketConfig memory _marketConfig){
+        return proposal.marketConfig;
+    }
+
+    /// @notice returns the asset config struct
+    function getAssetConfig() external view returns (AssetConfig memory _assetConfig){
+        return proposal.assetConfig;
+    }
+
+    /// @notice returns the reserveConfig struct
+    function getReserveConfig() external view returns (ReserveConfig memory _reserveConfig){
+        return proposal.assetConfig.reserveConfig;
     }
 }

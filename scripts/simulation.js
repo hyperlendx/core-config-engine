@@ -42,7 +42,7 @@ async function main() {
     }
     let encodedProposal = await encode(proposal)
 
-    const ListingsConfigEngine = await ethers.getContractFactory("ListingsConfigEngine");
+    const ListingsConfigEngine = await ethers.getContractFactory("ListingConfigEngine");
     const configEngine = await ListingsConfigEngine.deploy(
         encodedProposal, proposal.description, 
         prefixes.hTokenNamePrefix, prefixes.symbolPrefix, prefixes.debtTokenPrefix
@@ -76,6 +76,7 @@ async function main() {
     //do simulations & tests here
     hre.tracer.enabled = true;
     let execute = await configEngine.connect(signer).executeProposal();
+    console.log(execute)
     let r = await execute.wait()
     console.log(r)
     hre.tracer.enabled = false;
