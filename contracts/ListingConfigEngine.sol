@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.18;
+pragma solidity 0.8.18;
 
 import { Ownable } from './dependencies/Ownable.sol';
 import { ConfiguratorInputTypes } from './dependencies/types/ConfiguratorInputTypes.sol';
@@ -75,11 +75,15 @@ contract ListingConfigEngine is Ownable {
     /// @notice pool configurator of the market
     IPoolConfigurator public poolConfigurator;
 
-    /// @notice strings are stored separately, since they are causing problems if they are encoded in the struct
-    string public description;         // description of the proposal
-    string public hTokenNamePrefix;    // prefix used in the hToken name
-    string public symbolPrefix;        // prefix used in the hToken symbol
-    string public debtTokenPrefix;     // prefix used for debt tokens name
+    /// @dev strings are stored separately, since they are causing problems if they are encoded in the struct
+    /// @notice description of the proposal
+    string public description;   
+    /// @notice prefix used in the hToken name    
+    string public hTokenNamePrefix;
+    /// @notice prefix used in the hToken symbol
+    string public symbolPrefix;
+    /// @notice prefix used for debt tokens name
+    string public debtTokenPrefix;
 
     /// @notice event emitting the price source data, used during simulations
     event PriceSourceData(uint256 _price);
@@ -258,5 +262,14 @@ contract ListingConfigEngine is Ownable {
     /// @notice returns the reserveConfig struct
     function getReserveConfig() external view returns (ReserveConfig memory _reserveConfig){
         return proposal.assetConfig.reserveConfig;
+    }
+
+    /// @notice returns the string metadata of the proposal
+    /// @return description description of the proposal
+    /// @return hTokenNamePrefix prefix used in the hToken name   
+    /// @return symbolPrefix prefix used in the hToken symbol
+    /// @return debtTokenPrefix prefix used for debt tokens name
+    function getMetadata() external view returns (string memory, string memory, string memory, string memory) {
+        return (description, hTokenNamePrefix, symbolPrefix, debtTokenPrefix);
     }
 }
