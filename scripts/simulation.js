@@ -74,12 +74,10 @@ async function main() {
     console.log(`prepared privilegies`)
 
     //do simulations & tests here
-    hre.tracer.enabled = true;
     let execute = await configEngine.connect(signer).executeProposal();
     console.log(execute)
     let r = await execute.wait()
     console.log(r)
-    hre.tracer.enabled = false;
 
     //remove configEngine from riskAdmin
     await aclManager.connect(aclAdminSigner).removeRiskAdmin(configEngine.target)

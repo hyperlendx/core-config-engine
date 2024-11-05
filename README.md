@@ -30,6 +30,3 @@ Run simulations: `npx hardhat run scripts/simulation.js --network hardhat`
 Tests:
 
 `npx hardhat test`
-
-In case of `TypeError: Cannot read properties of undefined (reading 'map')` error, try running the tests again.
-If that doesn't fix it, delete `artifacts/` folder and try again.
