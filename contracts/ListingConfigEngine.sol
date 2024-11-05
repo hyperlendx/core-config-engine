@@ -160,6 +160,12 @@ contract ListingConfigEngine is Ownable {
         require(sourcePrice != 0, "price == 0");
         emit PriceSourceData(sourcePrice); 
 
+        //check if the decimals from the price source match the base currency unit
+        //in case of USD price feeds, BASE_CURRENCY_UNIT = 100000000 and decimals() = 8
+        uint256 priceSourceDecimals = IPriceSource(marketConfig.priceSource).decimals();
+        uint256 baseCurrencyUnit = oracle.BASE_CURRENCY_UNIT();
+        require(baseCurrencyUnit / 10**priceSourceDecimals == 1, "BASE_CURRENCY_UNIT and priceSourceDecimals mismatch");
+
         //add asset to oracle
         address[] memory assets = new address[](1);
         assets[0] = assetConfig.underlyingAsset;
