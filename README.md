@@ -22,4 +22,13 @@ ListingsConfigEngine can either be deployed on it's own or using the ConfigEngin
 
 ---
 
-Run simulations: `npx hardhat run scripts/simulation.js --network hardhat`
+Run simulations: `npx hardhat run scripts/simulation.js --network hyperEvmTestnetFork`
+
+---
+
+Tests:
+
+`npx hardhat test`
+
+In case of `TypeError: Cannot read properties of undefined (reading 'map')` error, try running the tests again, this might happen if external contracts are not compiled yet.
+If that doesn't fix it, delete `artifacts/` folder and try again.

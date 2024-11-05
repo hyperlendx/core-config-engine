@@ -15,14 +15,14 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      forking: {
-        url: `https://api.hyperliquid-testnet.xyz/evm`,
-      },
+        // forking: {
+        //     url: `https://api.hyperliquid-testnet.xyz/evm`,
+        // },
     },
     hyperEvmTestnet: {
         accounts: [process.env.PRIVATE_KEY],
         chainId: 998,
-        url: 'https://api.hyperliquid-testnet.xyz/evm',
+        url: 'https://api.hyperliquid-testnet.xyz/evm'
     }
   },
   etherscan: {
