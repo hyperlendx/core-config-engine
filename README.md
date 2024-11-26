@@ -1,8 +1,12 @@
-# Listings Config Engine
+# Config Engine
 
-The contract is used to add new assets to the HyperLend markets
+The contracts are used to change configuration of the HyperLend markets
 
 ---
+
+### ListingsConfigEngine
+
+Used to list new assets on HyperLend core markets.
 
 ListingsConfigEngine can either be deployed on its own or using the ConfigEngineFactory contract.
 
@@ -19,6 +23,20 @@ ListingsConfigEngine can either be deployed on its own or using the ConfigEngine
 - Remove ConfigEngine from riskAdmin
 - Remove ConfigEngine from listingsAdmin
 ```
+
+---
+
+### ACLConfigEngine
+
+Used to update ACL manager roles.
+
+---
+
+### CapsConfigEngine
+
+Used to update supply and borrow caps.
+
+ConfigEngine contract must be riskAdmin
 
 ---
 
