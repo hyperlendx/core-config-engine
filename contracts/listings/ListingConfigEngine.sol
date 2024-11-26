@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import { Ownable } from './dependencies/Ownable.sol';
-import { ConfiguratorInputTypes } from './dependencies/types/ConfiguratorInputTypes.sol';
+import { Ownable } from '../dependencies/Ownable.sol';
+import { ConfiguratorInputTypes } from '../dependencies/types/ConfiguratorInputTypes.sol';
 
-import { IOracle } from './dependencies/interfaces/IOracle.sol';
-import { IPriceSource } from './dependencies/interfaces/IPriceSource.sol';
-import { IPoolAddressesProvider } from './dependencies/interfaces/IPoolAddressesProvider.sol';
-import { IPoolConfigurator } from './dependencies/interfaces/IPoolConfigurator.sol';
-import { IERC20Detailed } from './dependencies/interfaces/IERC20Detailed.sol';
-import { IACLManager } from './dependencies/interfaces/IACLManager.sol';
-import { IPool } from './dependencies/interfaces/IPool.sol';
+import { IOracle } from '../dependencies/interfaces/IOracle.sol';
+import { IPriceSource } from '../dependencies/interfaces/IPriceSource.sol';
+import { IPoolAddressesProvider } from '../dependencies/interfaces/IPoolAddressesProvider.sol';
+import { IPoolConfigurator } from '../dependencies/interfaces/IPoolConfigurator.sol';
+import { IERC20Detailed } from '../dependencies/interfaces/IERC20Detailed.sol';
+import { IACLManager } from '../dependencies/interfaces/IACLManager.sol';
+import { IPool } from '../dependencies/interfaces/IPool.sol';
 
 /// @title ListingConfigEngine
 /// @author HyperLend

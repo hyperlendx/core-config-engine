@@ -2,13 +2,14 @@
 pragma solidity 0.8.18;
 
 import { ListingConfigEngine } from './ListingConfigEngine.sol';
-import { Ownable } from './dependencies/Ownable.sol';
-import { IERC20Detailed } from './dependencies/interfaces/IERC20Detailed.sol';
 
-/// @title ConfigEngineFactory
+import { Ownable } from '../dependencies/Ownable.sol';
+import { IERC20Detailed } from '../dependencies/interfaces/IERC20Detailed.sol';
+
+/// @title ListingsConfigEngineFactory
 /// @author HyperLend
 /// @notice Config engine factory used to create instances of ListingConfigEngine
-contract ConfigEngineFactory is Ownable {
+contract ListingsConfigEngineFactory is Ownable {
     /// @notice number of the proposals
     uint256 public lastProposalId;
     /// @notice mapping between id and instances of ListingConfigEngine
