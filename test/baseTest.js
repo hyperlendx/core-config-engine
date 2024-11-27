@@ -10,7 +10,7 @@ execSync(`cp -r ./node_modules/hyperlendcore/artifacts ./artifacts/external`);
 // see: https://github.com/hyperlendx/hyperlend-core/blob/master/test/utils/setup.js 
 // see: https://github.com/hyperlendx/hyperlend-core/blob/master/test/baseTest.js for list of available methods and contractIDs
 const { prepareEnv } = require("hyperlendcore/test/utils/setup.js")
-const { encode } = require("../scripts/utils")
+const { encodeListingProposal } = require("../scripts/utils/encode")
 
 describe("HyperLendCore", function () {
     async function prepareEnvFixture(){
@@ -79,7 +79,7 @@ describe("HyperLendCore", function () {
             symbolPrefix: "HyperEvmTest",
             debtTokenPrefix: "HyperEVM Testnet",
         }
-        let encodedProposal = await encode(proposal)
+        let encodedProposal = await encodeListingProposal(proposal)
 
         //create proposal
         const listingConfigEngine = await (await ethers.getContractFactory("ListingConfigEngine")).deploy(

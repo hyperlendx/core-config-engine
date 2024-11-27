@@ -12,11 +12,13 @@ import { IERC20Detailed } from '../dependencies/interfaces/IERC20Detailed.sol';
 import { IACLManager } from '../dependencies/interfaces/IACLManager.sol';
 import { IPool } from '../dependencies/interfaces/IPool.sol';
 
-/// @title CapsConfiguratorEngine
+import "hardhat/console.sol";
+
+/// @title CapsConfigEngine
 /// @author HyperLend
 /// @notice Configurator engine, used to change protocol supply and borrow caps
 /// @dev New contract has to be deployed per proposal
-contract CapsConfiguratorEngine is Ownable {
+contract CapsConfigEngine is Ownable {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     /*                     Structs & Enums                      */
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -94,7 +96,7 @@ contract CapsConfiguratorEngine is Ownable {
 
         //verify we have all correct privilegies on ACLManager
         IACLManager aclManager = IACLManager(poolAddressesProvider.getACLManager());
-        require(aclManager.isRiskAdmin(address(this)), "missing assetListingAdmin privilegies");
+        require(aclManager.isRiskAdmin(address(this)), "missing riskAdmin privilegies");
     }
 
     /// @notice marks proposal as executed
@@ -103,7 +105,7 @@ contract CapsConfiguratorEngine is Ownable {
     }
 
     /// @notice updates the reserve caps
-    function _execute() internal virtual {
+    function _execute() internal {        
         if (proposal.actionType == ActionType.SET_SUPPLY_CAP){
             poolConfigurator.setSupplyCap(proposal.asset, proposal.newCap);
         }

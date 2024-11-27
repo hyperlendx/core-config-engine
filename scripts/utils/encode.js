@@ -1,4 +1,27 @@
-async function encode(proposal){
+async function encodeCapConfigProposal(proposal){
+    const abiEncoder = new ethers.AbiCoder()
+
+    const proposalStructTypes = [
+        "uint256", //id
+        "address", //poolAddressesProvider
+        "address", //asset
+        "uint256", //enwCap
+        "uint256", //actionType
+    ]
+
+    return abiEncoder.encode(
+        proposalStructTypes,
+        [
+            proposal.proposalId,
+            proposal.poolAddressesProvider,
+            proposal.asset,
+            proposal.newCap,
+            proposal.actionType
+        ]
+    );
+}
+
+async function encodeListingProposal(proposal){
     const abiEncoder = new ethers.AbiCoder()
 
     const reserveConfigTuple = `tuple(uint256, uint256, uint256, uint256, uint256, uint256, bool, bool, bool, uint256, address)`
@@ -42,4 +65,29 @@ async function encode(proposal){
     );
 }
 
-module.exports.encode = encode
+async function encodeACLConfigProposal(proposal){
+    const abiEncoder = new ethers.AbiCoder()
+
+    const proposalStructTypes = [
+        "uint256", //id
+        "address", //poolAddressesProvider
+        "address", //admin
+        "uint256", //actionType
+    ]
+
+    return abiEncoder.encode(
+        proposalStructTypes,
+        [
+            proposal.proposalId,
+            proposal.poolAddressesProvider,
+            proposal.admin,
+            proposal.actionType
+        ]
+    );
+}
+
+module.exports = {
+    encodeCapConfigProposal: encodeCapConfigProposal,
+    encodeListingProposal: encodeListingProposal,
+    encodeACLConfigProposal: encodeACLConfigProposal
+}
