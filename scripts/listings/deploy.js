@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat");
 const path = require('path');
 
-const { verify } = require("./verify")
+const { verify } = require("../utils/verify")
 
 async function main() {
     const ConfigEngineFactory = await ethers.getContractFactory("ConfigEngineFactory");
