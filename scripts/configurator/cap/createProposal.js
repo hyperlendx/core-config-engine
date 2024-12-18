@@ -16,24 +16,8 @@ async function main() {
         encodedProposal, proposal.description, 
     )
     console.log(`capsConfiguratorEngine deployed to: ${capsConfiguratorEngine.target}`)
-
     console.log(`proposal:`, await capsConfiguratorEngine.getProposal())
     console.log(`metadata:`, await capsConfiguratorEngine.getMetadata())
-
-    // const poolAddressesProvider = await ethers.getContractAt("IPoolAddressesProvider", proposal.poolAddressesProvider);
-    // const aclManager = await ethers.getContractAt("IACLManager", (await poolAddressesProvider.getACLManager()));
-
-    // const sendTxAddRiskAdmin = await aclManager.addRiskAdmin(capsConfiguratorEngine.target)
-    // await sendTxAddRiskAdmin.wait()
-    // console.log(`risk admin added`)
-
-    // const sendTxExecute = await capsConfiguratorEngine.executeProposal();
-    // await sendTxExecute.wait()
-    // console.log(`proposal executed`)
-
-    // const sendTxRemoveRiskAdmin = await aclManager.removeRiskAdmin(capsConfiguratorEngine.target)
-    // await sendTxRemoveRiskAdmin.wait()
-    // console.log(`risk admin removed`)
 }
   
 main()

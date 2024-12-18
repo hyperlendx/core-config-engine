@@ -16,7 +16,7 @@ import { IPool } from '../dependencies/interfaces/IPool.sol';
 /// @author HyperLend
 /// @notice Config engine used to update ACL Manager
 /// @dev New contract has to be deployed per proposal
-contract ListingConfigEngine is Ownable {
+contract ACLConfigEngine is Ownable {
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     /*                     Structs & Enums                      */
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
