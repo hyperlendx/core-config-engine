@@ -50,9 +50,9 @@ contract ListingsConfigEngineFactory is Ownable {
         underlyingToken.approve(address(listingConfigEngine), listingConfigEngine.getReserveConfig().seedAmount);
 
         proposalConfigEngines[lastProposalId] = address(listingConfigEngine);
-        lastProposalId++;
-
         emit ProposalCreated(lastProposalId);
+
+        lastProposalId++;
     }
 
     /// @notice function used to execute certain proposal
