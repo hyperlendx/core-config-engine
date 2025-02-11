@@ -65,6 +65,10 @@ contract ListingsConfigEngineFactory is Ownable {
     function cancelProposal(uint256 _id) external onlyOwner() {
         ListingConfigEngine(proposalConfigEngines[_id]).cancelProposal();
         emit ProposalCanceled(_id);
+
+        //refund seed token balance
+        IERC20Detailed underlyingToken = IERC20Detailed(ListingConfigEngine(proposalConfigEngines[_id]).getAssetConfig().underlyingAsset);
+        underlyingToken.transfer(msg.sender, underlyingToken.balanceOf(address(this)));
     }
 
     /// @notice returns the proposal info by id
