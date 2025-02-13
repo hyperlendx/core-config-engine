@@ -12,8 +12,6 @@ import { IERC20Detailed } from '../dependencies/interfaces/IERC20Detailed.sol';
 import { IACLManager } from '../dependencies/interfaces/IACLManager.sol';
 import { IPool } from '../dependencies/interfaces/IPool.sol';
 
-import "hardhat/console.sol";
-
 /// @title CapsConfigEngine
 /// @author HyperLend
 /// @notice Configurator engine, used to change protocol supply and borrow caps
