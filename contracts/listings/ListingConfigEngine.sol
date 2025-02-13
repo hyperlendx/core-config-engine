@@ -197,7 +197,7 @@ contract ListingConfigEngine is Ownable {
             aTokenName: string(abi.encodePacked("HyperLend ", hTokenNamePrefix, " ", symbol)),
             aTokenSymbol: string(abi.encodePacked("h", symbolPrefix, symbol)),
             variableDebtTokenName: string(abi.encodePacked("HyperLend ", debtTokenPrefix, " Variable Debt ", symbol)),
-            variableDebtTokenSymbol: string(abi.encodePacked("hVariableDebt", debtTokenPrefix, symbol)),
+            variableDebtTokenSymbol: string(abi.encodePacked("hVariableDebt", symbolPrefix, symbol)),
             stableDebtTokenName: string(abi.encodePacked("HyperLend ", debtTokenPrefix, " Stable Debt ", symbol)),
             stableDebtTokenSymbol: string(abi.encodePacked("hStableDebt", symbolPrefix, symbol)),
             params: "0x10"
