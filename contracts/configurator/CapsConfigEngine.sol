@@ -46,9 +46,9 @@ contract CapsConfigEngine is Ownable {
     bool public isExecuted;
     
     /// @notice pool address provider of the market
-    IPoolAddressesProvider public poolAddressesProvider;
+    IPoolAddressesProvider immutable public poolAddressesProvider;
     /// @notice pool configurator of the market
-    IPoolConfigurator public poolConfigurator;
+    IPoolConfigurator immutable public poolConfigurator;
 
     /// @dev strings are stored separately, since they are causing problems if they are encoded in the struct
     /// @notice description of the proposal

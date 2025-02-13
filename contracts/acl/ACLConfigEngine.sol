@@ -55,9 +55,9 @@ contract ACLConfigEngine is Ownable {
     bool public isExecuted;
     
     /// @notice pool address provider of the market
-    IPoolAddressesProvider public poolAddressesProvider;
+    IPoolAddressesProvider immutable public poolAddressesProvider;
     /// @notice ACL manager of the market
-    IACLManager public aclManager;
+    IACLManager immutable public aclManager;
 
     /// @dev strings are stored separately, since they are causing problems if they are encoded in the struct
     /// @notice description of the proposal
