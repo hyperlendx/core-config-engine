@@ -143,7 +143,7 @@ contract ListingConfigEngine is Ownable {
         //verify we have all correct privilegies on ACLManager
         IACLManager aclManager = IACLManager(poolAddressesProvider.getACLManager());
         require(aclManager.isAssetListingAdmin(address(this)), "missing assetListingAdmin privilegies");
-        require(aclManager.isRiskAdmin(address(this)), "missing assetListingAdmin privilegies");
+        require(aclManager.isRiskAdmin(address(this)), "missing riskAdmin privilegies");
     }
 
     /// @notice marks proposal as executed
