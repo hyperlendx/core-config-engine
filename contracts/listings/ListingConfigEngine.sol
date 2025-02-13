@@ -11,12 +11,16 @@ import { IPoolConfigurator } from '../dependencies/interfaces/IPoolConfigurator.
 import { IERC20Detailed } from '../dependencies/interfaces/IERC20Detailed.sol';
 import { IACLManager } from '../dependencies/interfaces/IACLManager.sol';
 import { IPool } from '../dependencies/interfaces/IPool.sol';
+import { IERC20 } from '../dependencies/IERC20.sol';
+import { SafeERC20 } from '../dependencies/SafeERC20.sol';
 
 /// @title ListingConfigEngine
 /// @author HyperLend
 /// @notice Config engine used to list new tokens
 /// @dev New contract has to be deployed per proposal
 contract ListingConfigEngine is Ownable {
+    using SafeERC20 for IERC20;
+
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
     /*                         Structs                          */
     /*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*/
@@ -241,8 +245,8 @@ contract ListingConfigEngine is Ownable {
     function _seedPool(address token, address pool, uint256 amount, address seedAmountsHolder) internal {
         require(amount >= 10000, 'seed amount too low');
 
-        IERC20Detailed(token).transferFrom(msg.sender, address(this), amount);
-        IERC20Detailed(token).approve(pool, amount);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(token).safeIncreaseAllowance(pool, amount);
         IPool(pool).supply(token, amount, seedAmountsHolder, 0);
     }
 

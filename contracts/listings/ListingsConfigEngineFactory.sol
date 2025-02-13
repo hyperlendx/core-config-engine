@@ -5,11 +5,15 @@ import { ListingConfigEngine } from './ListingConfigEngine.sol';
 
 import { Ownable } from '../dependencies/Ownable.sol';
 import { IERC20Detailed } from '../dependencies/interfaces/IERC20Detailed.sol';
+import { IERC20 } from '../dependencies/IERC20.sol';
+import { SafeERC20 } from '../dependencies/SafeERC20.sol';
 
 /// @title ListingsConfigEngineFactory
 /// @author HyperLend
 /// @notice Config engine factory used to create instances of ListingConfigEngine
 contract ListingsConfigEngineFactory is Ownable {
+    using SafeERC20 for IERC20;
+
     /// @notice number of the proposals
     uint256 public lastProposalId;
     /// @notice mapping between id and instances of ListingConfigEngine
@@ -46,8 +50,8 @@ contract ListingsConfigEngineFactory is Ownable {
         );
 
         // approve the underlying token, so new pool can be seeded
-        IERC20Detailed underlyingToken = IERC20Detailed(listingConfigEngine.getAssetConfig().underlyingAsset);
-        underlyingToken.approve(address(listingConfigEngine), listingConfigEngine.getReserveConfig().seedAmount);
+        IERC20 underlyingToken = IERC20(listingConfigEngine.getAssetConfig().underlyingAsset);
+        underlyingToken.safeIncreaseAllowance(address(listingConfigEngine), listingConfigEngine.getReserveConfig().seedAmount);
 
         proposalConfigEngines[lastProposalId] = address(listingConfigEngine);
         emit ProposalCreated(lastProposalId);
@@ -67,8 +71,8 @@ contract ListingsConfigEngineFactory is Ownable {
         emit ProposalCanceled(_id);
 
         //refund seed token balance
-        IERC20Detailed underlyingToken = IERC20Detailed(ListingConfigEngine(proposalConfigEngines[_id]).getAssetConfig().underlyingAsset);
-        underlyingToken.transfer(msg.sender, underlyingToken.balanceOf(address(this)));
+        IERC20 underlyingToken = IERC20(ListingConfigEngine(proposalConfigEngines[_id]).getAssetConfig().underlyingAsset);
+        underlyingToken.safeTransfer(msg.sender, underlyingToken.balanceOf(address(this)));
     }
 
     /// @notice returns the proposal info by id
